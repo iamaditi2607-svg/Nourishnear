@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fff7ec">
+  <meta name="description" content="Share good food with your neighborhood. Find and donate surplus food near you with NourishNear.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>NourishNear — Good food, closer together</title>
+  <link rel="preconnect" href="https://images.unsplash.com">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="prototype.css">
+  <link rel="stylesheet" href="foodie-theme.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
+  <script src="api.js" defer></script>
+  <script src="app.js" defer></script>
+  <script src="assistant.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <a class="brand" href="#" data-page="discover" aria-label="NourishNear home"><span class="brand-mark">n</span><span>Nourish<span class="brand-light">Near</span><small>GOOD FOOD, SHARED</small></span></a>
+      <div class="nav-label">MENU</div>
+      <nav class="main-nav">
+        <button class="nav-link active" data-page="discover"><span class="nav-icon">⌕</span> Discover food</button>
+        <button class="nav-link" data-page="food-map"><span class="nav-icon">⌖</span> Community food map</button>
+        <button class="nav-link" data-page="my-donations"><span class="nav-icon">♧</span> My donations <span class="nav-count" id="donation-count">0</span></button>
+        <button class="nav-link" data-page="my-requests"><span class="nav-icon">♡</span> My food requests <span class="nav-count" id="pickup-count">0</span></button>
+      </nav>
+      <div class="sidebar-note"><span class="note-icon">✳</span><strong>A little food goes a long way.</strong><p>Every shared meal is a step toward a kinder, less wasteful neighborhood.</p><span class="note-foot">GOOD THINGS GROW WHEN SHARED</span></div>
+      <div class="profile"><div class="avatar">A</div><div><strong>Aditi Sharma</strong><span>Community member</span></div><span class="profile-menu">···</span></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="mobile-brand"><span class="brand-mark">n</span><strong>NourishNear</strong></div>
+        <div class="breadcrumb"><span>Community</span><span class="crumb-slash">/</span><strong id="breadcrumb-page">Discover food</strong></div>
+        <div class="topbar-actions"><button class="button button-outline map-shortcut" data-page="food-map">⌖ Map</button><button class="icon-button notification-button" id="notification-button" aria-label="Notifications">♧<i></i></button><button class="button button-primary top-donate" data-open-donate><span>＋</span> Share food</button></div>
+      </header>
+
+      <section class="page-view" id="page-discover">
+        <div class="welcome-row"><div><div class="eyebrow"><span class="live-dot"></span> UTTAR PRADESH, SHARING MORE</div><h1>Good food is better <em>shared.</em></h1><p class="welcome-copy">Find something lovely around the corner, or pass a little goodness along.</p></div><div class="date-chip"><span>☀</span> Uttar Pradesh <b>⌄</b></div></div>
+        <div class="impact-strip"><div class="impact-intro"><span class="impact-icon">✳</span><div><strong>Small acts. Real impact.</strong><span>Live posts only; demo samples are not counted.</span></div></div><div class="impact-stat"><strong id="impact-meals">0</strong><span>real donations</span></div><div class="impact-stat"><strong id="impact-active">0</strong><span>active listings</span></div><div class="impact-stat"><strong id="impact-needs">0</strong><span>neighbors need help</span></div><span class="impact-sparkle">✳</span></div>
+        <section class="sharing-actions" aria-label="Share surplus food or request food">
+          <article class="sharing-action donate-action">
+            <span class="sharing-action-icon" aria-hidden="true">🍲</span>
+            <div><h2>Extra food to share?</h2><p>Home-cooked meals, wedding or event leftovers—post the food and pickup area so nearby people can find it.</p></div>
+            <button class="button button-primary" data-open-donate>Donate food <span>→</span></button>
+          </article>
+          <article class="sharing-action need-action">
+            <span class="sharing-action-icon" aria-hidden="true">♡</span>
+            <div><h2>Need food in your area?</h2><p>Post what is needed and where. Food sharers can find your request on the community map.</p></div>
+            <button class="button button-outline" data-open-need>Post a food need <span>→</span></button>
+          </article>
+        </section>
+        <p class="map-data-note">The map shows requests and donations posted by NourishNear users. It cannot detect unreported food needs; sample posts are marked DEMO.</p>
+        <section class="assistant-panel" aria-label="Nourish AI food request assistant">
+          <div class="assistant-copy"><span class="assistant-orb">✳</span><div><span class="assistant-kicker">NOURISH AI · YOUR EVERYDAY ASSISTANT</span><h2>Ask me anything.</h2><p>Food, locations, recipes, everyday questions, translations and ideas—in Hindi, Hinglish or English.</p></div></div>
+          <div id="assistant-chat" class="assistant-chat hidden" role="log" aria-live="polite" aria-label="Nourish AI conversation"></div>
+          <div class="assistant-input-wrap"><textarea id="need-prompt" rows="1" aria-label="Ask Nourish AI about food or your neighborhood" placeholder="e.g. Gomti Nagar, Lucknow mein 3 logon ke liye vegetarian khana kahan milega?"></textarea><button class="voice-button" id="voice-request" aria-label="Ask by voice">🎙</button><button class="button button-primary assistant-send" id="ask-assistant">Ask AI <span>→</span></button></div>
+          <div class="assistant-foot"><span id="voice-status">Hindi or English · Location is used only when you share it</span><button id="open-need-form">Post a food request</button></div>
+        </section>
+        <div class="feed-switch" role="group" aria-label="Choose what to browse"><button class="feed-tab active" data-feed="needs">People who need food <span id="needs-tab-count"></span></button><button class="feed-tab" data-feed="food">Food available nearby <span id="food-tab-count"></span></button></div>
+        <div class="search-panel"><label class="search-field"><span>⌕</span><input type="search" id="search-input" placeholder="Search meals, ingredients, or an area..." autocomplete="off"></label><span class="search-divider"></span><div class="location-field"><span>⌖</span><input type="text" id="location-input" value="Uttar Pradesh" aria-label="Search location" autocomplete="off"><button class="location-gps" id="locate-donor" type="button" aria-label="Use my current location" title="Use my current location">◎</button></div><button class="button button-primary search-button" id="search-button">Find food <span>→</span></button></div>
+        <div class="browse-heading"><div><h2 id="feed-title">Neighbors looking for a little help <span class="result-count" id="result-count"></span></h2><p id="feed-description">Offer a meal to someone nearby who could use one today.</p></div><label class="sort-select">Sort by <select id="sort-select" aria-label="Sort nearby posts"><option value="nearby">Nearest first</option><option value="newest">Recently added</option><option value="quantity">Most servings</option></select></label></div>
+        <div class="category-row" id="food-categories" role="group" aria-label="Filter food category">
+          <button class="category-chip selected" data-category="All">✳ <span>All food</span></button><button class="category-chip" data-category="Meals">🍱 <span>Meals</span></button><button class="category-chip" data-category="Produce">🥬 <span>Produce</span></button><button class="category-chip" data-category="Bakery">🥐 <span>Bakery</span></button><button class="category-chip" data-category="Dairy">🥛 <span>Dairy</span></button><button class="category-chip" data-category="Other">✦ <span>Other</span></button><button class="filter-button" id="clear-filters">↻ <span>Reset filters</span></button>
+        </div>
+        <div class="content-grid">
+          <div><div class="food-grid" id="food-grid" aria-live="polite"></div><div class="empty-state hidden" id="empty-state"><span>🥣</span><h3>No food found just yet</h3><p>Try another search or check back soon—good things are always cooking.</p><button class="button button-outline" data-open-donate>Share the first meal</button></div></div>
+          <aside class="neighborhood-card">
+            <div class="map-heading"><div><span class="eyebrow">LOCATION SNAPSHOT</span><h3 id="map-title">People needing food</h3></div><button id="map-expand" data-page="food-map" aria-label="Show all nearby posts">↗</button></div>
+            <div class="mini-map" aria-label="Approximate map of nearby community posts"><div class="map-block block-one"></div><div class="map-block block-two"></div><div class="map-block block-three"></div><div class="map-block block-four"></div><span class="map-road road-one"></span><span class="map-road road-two"></span><span class="map-road road-three"></span><span class="map-park">COMMUNITY</span><div id="request-map-pins"></div><span class="you-pin"><i></i></span><span class="you-label">YOU</span><div class="map-legend"><span><i class="legend-food"></i> Nearby posts</span><span><i class="legend-you"></i> Your area</span></div></div>
+            <div class="nearby-summary"><span class="nearby-pulse"></span><strong id="nearby-count">3</strong><span id="nearby-summary-text">people need food nearby</span><button id="nearby-filter" data-page="food-map">View map →</button></div>
+            <div class="community-quote"><span>“</span><p>There’s always enough when we look out for each other.</p><small>— A NEIGHBOR IN KOTHRUD</small></div>
+          </aside>
+        </div>
+        <footer class="page-footer"><span>Made with care, shared with love. <b>♥</b></span><span>NourishNear <i>·</i> A little less waste, a lot more together.</span></footer>
+      </section>
+      <section class="page-view secondary-view hidden" id="page-food-map">
+        <div class="secondary-header"><div><div class="eyebrow"><span class="live-dot"></span> COMMUNITY FOOD MAP</div><h1>Find a place. <em>Share a meal.</em></h1><p>Search any city or area worldwide. See community food posts wherever neighbors have shared them.</p></div><button class="button button-primary" data-open-donate>＋ Share food</button></div>
+        <div class="map-toolbar"><div class="location-input-row"><input id="map-location-input" type="search" value="Uttar Pradesh" maxlength="120" aria-label="Search a city or area anywhere" placeholder="Search any city, area, or address"><button class="button button-primary" id="map-search">Find place</button><button class="button button-outline" id="map-my-location" type="button">◎ My location</button></div><label class="sort-select">Show <select id="map-filter" aria-label="Filter map pins"><option value="all" selected>Food and needs</option><option value="needs">People needing food</option><option value="food">Food available</option></select></label></div>
+        <div class="map-summary" id="map-summary" aria-live="polite"></div>
+        <div id="up-food-map" class="up-food-map" role="application" aria-label="Interactive map of food needs and available food around the world"></div>
+        <p class="map-attribution">Map data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>. Sample posts are marked DEMO.</p>
+        <div class="donation-map-list"><h2>Food requests and offers by area</h2><div id="map-posts-list" class="secondary-list"></div></div>
+      </section>
+      <section class="page-view secondary-view hidden" id="page-my-donations"><div class="secondary-header"><div><div class="eyebrow"><span class="live-dot"></span> YOUR GENEROSITY IN ACTION</div><h1>My <em>donations.</em></h1><p>Keep track of the total food you’ve shared and every drop-off area.</p></div><button class="button button-primary" data-open-donate>＋ Share food</button></div><div class="secondary-summary" id="donation-summary"></div><div class="donation-map-list"><h2>My donation places</h2><div id="donation-places" class="secondary-list"></div></div><div class="donation-map-list"><h2>Every food donation</h2><div id="donation-list" class="secondary-list"></div></div></section>
+      <section class="page-view secondary-view hidden" id="page-my-requests"><div class="secondary-header"><div><div class="eyebrow"><span class="live-dot"></span> A LITTLE HELP IS ON ITS WAY</div><h1>My food <em>requests.</em></h1><p>Check in on the food requests you’ve shared with your neighborhood.</p></div><button class="button button-primary" data-open-need>＋ Ask for food</button></div><div class="secondary-summary" id="request-summary"></div><div class="secondary-list" id="request-list"></div></section>
+    </main>
+  </div>
+  <div class="modal-backdrop hidden" id="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" id="modal-close" aria-label="Close dialog">×</button><div id="modal-content"></div></section></div>
+  <div class="toast-region" id="toast-region" aria-live="polite"></div>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("/service-worker.js").catch(error => console.error("Could not register the app service worker.", error)));
+    }
+  </script>
+</body>
+</html>

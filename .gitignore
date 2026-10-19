@@ -1,0 +1,5 @@
+.env
+nourishnear.db
+nourishnear.db-shm
+nourishnear.db-wal
+__pycache__/
