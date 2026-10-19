@@ -29,7 +29,8 @@
         <button class="nav-link active" data-page="discover"><span class="nav-icon">⌕</span> Discover food</button>
         <button class="nav-link" data-page="food-map"><span class="nav-icon">⌖</span> Community food map</button>
         <button class="nav-link" data-page="my-donations"><span class="nav-icon">♧</span> My donations <span class="nav-count" id="donation-count">0</span></button>
-        <button class="nav-link" data-page="my-requests"><span class="nav-icon">♡</span> My food requests <span class="nav-count" id="pickup-count">0</span></button>
+        <button class="nav-link" data-page="my-requests"><span class="nav-icon">♡</span> My food requests <span class="nav-count" id="request-count">0</span></button>
+        <button class="nav-link" data-page="my-pickups"><span class="nav-icon">🧺</span> My pickups <span class="nav-count" id="pickup-count">0</span></button>
       </nav>
       <div class="sidebar-note"><span class="note-icon">✳</span><strong>A little food goes a long way.</strong><p>Every shared meal is a step toward a kinder, less wasteful neighborhood.</p><span class="note-foot">GOOD THINGS GROW WHEN SHARED</span></div>
       <div class="profile"><div class="avatar">A</div><div><strong>Aditi Sharma</strong><span>Community member</span></div><span class="profile-menu">···</span></div>
@@ -91,6 +92,7 @@
       </section>
       <section class="page-view secondary-view hidden" id="page-my-donations"><div class="secondary-header"><div><div class="eyebrow"><span class="live-dot"></span> YOUR GENEROSITY IN ACTION</div><h1>My <em>donations.</em></h1><p>Keep track of the total food you’ve shared and every drop-off area.</p></div><button class="button button-primary" data-open-donate>＋ Share food</button></div><div class="secondary-summary" id="donation-summary"></div><div class="donation-map-list"><h2>My donation places</h2><div id="donation-places" class="secondary-list"></div></div><div class="donation-map-list"><h2>Every food donation</h2><div id="donation-list" class="secondary-list"></div></div></section>
       <section class="page-view secondary-view hidden" id="page-my-requests"><div class="secondary-header"><div><div class="eyebrow"><span class="live-dot"></span> A LITTLE HELP IS ON ITS WAY</div><h1>My food <em>requests.</em></h1><p>Check in on the food requests you’ve shared with your neighborhood.</p></div><button class="button button-primary" data-open-need>＋ Ask for food</button></div><div class="secondary-summary" id="request-summary"></div><div class="secondary-list" id="request-list"></div></section>
+      <section class="page-view secondary-view hidden" id="page-my-pickups"><div class="secondary-header"><div><div class="eyebrow"><span class="live-dot"></span> COMMUNITY GENEROSITY</div><h1>My <em>pickups.</em></h1><p>Food portions you have requested and reserved to pick up.</p></div><button class="button button-primary" data-page="discover">⌕ Find food</button></div><div class="secondary-summary" id="pickup-summary"></div><div class="donation-map-list"><h2>Reserved food pickups</h2><div id="pickup-list" class="secondary-list"></div></div></section>
     </main>
   </div>
   <div class="modal-backdrop hidden" id="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"><button class="modal-close" id="modal-close" aria-label="Close dialog">×</button><div id="modal-content"></div></section></div>

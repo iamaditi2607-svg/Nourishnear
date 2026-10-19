@@ -1,9 +1,20 @@
-# NourishNear
+# NourishNear 🍲
+
+> **🌐 Live Demo (Public URL):** [https://288334a6bae93a.lhr.life](https://288334a6bae93a.lhr.life)  
+> *(Accessible on mobile phones, tablets, and laptops worldwide)*
 
 NourishNear is a neighborhood food-sharing app with a Python/SQLite backend, location-aware food and request boards, donor-uploaded food photos, and a Groq-powered Hindi/English assistant. It can be installed as a Progressive Web App (PWA) from a supported browser.
 
-## Run on Windows
+## 🚀 Quick Run (Local or Public)
 
+### 1-Click Launch (with Public Tunnel)
+Double-click `run_public.bat` or run in PowerShell:
+```powershell
+.\run_public.ps1
+```
+This automatically starts the backend server on `http://127.0.0.1:8000` and creates a secure public HTTPS link for everyone.
+
+### Manual Run
 1. Install Python 3.9 or newer.
 2. In PowerShell, open this folder and start the app:
 
@@ -11,7 +22,7 @@ NourishNear is a neighborhood food-sharing app with a Python/SQLite backend, loc
    py server.py
    ```
 
-3. Open <http://127.0.0.1:8000> (do not open `index.html` directly). The SQLite database is created as `nourishnear.db`.
+3. Open <http://127.0.0.1:8000>. The SQLite database is created as `nourishnear.db`.
 4. To use Nourish AI, copy `.env.example` to `.env`, add a Groq Cloud key to `GROQ_API_KEY`, then restart the server:
 
    ```text

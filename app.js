@@ -115,14 +115,17 @@ function filteredListings() {
 function card(item) {
   const isSaved = saved.includes(item.id);
   const source = item.source || "Home / household";
-  const distance = donorCoordinates && item.mapCoordinates
-    ? ` · ${distanceBetween(donorCoordinates, item.mapCoordinates).toFixed(1)} km`
+  const coords = item.mapCoordinates || (Number.isFinite(item.latitude) && Number.isFinite(item.longitude) ? { latitude: item.latitude, longitude: item.longitude } : null);
+  const distance = donorCoordinates && coords
+    ? ` · ${distanceBetween(donorCoordinates, coords).toFixed(1)} km`
     : "";
   return `<article class="food-card"><div class="food-image">${foodPhoto(item)}<span class="food-badge">${esc(item.category)}</span><button class="save-button ${isSaved ? "saved" : ""}" data-save="${esc(item.id)}" aria-label="${isSaved ? "Remove saved listing" : "Save listing"}">${isSaved ? "♥" : "♡"}</button></div><div class="food-card-body"><div class="food-card-head"><h3>${esc(item.title)}</h3><span class="fresh-tag">${esc(sourceLabels[source] || source)}${item.demo ? " · DEMO" : ""}</span></div><p class="food-description">${esc(item.description)}</p><div class="food-meta"><div class="food-meta-row"><span class="meta-icon">♧</span><span><strong>${esc(item.quantity)} ${esc(item.unit)}</strong> available</span></div><div class="food-meta-row"><span class="meta-icon">⌂</span><span>${esc(source)}</span></div><div class="food-meta-row"><span class="meta-icon">⌖</span><span>${esc(item.location)}${distance}</span></div><div class="food-meta-row"><span class="meta-icon">◷</span><span>${esc(item.pickup)}</span></div></div><div class="food-card-bottom"><div class="donor-mini"><span class="donor-avatar">${esc(item.initials)}</span><span class="donor-name">${esc(item.donor)}</span></div><button class="claim-button" data-details="${esc(item.id)}">View & request →</button></div></div></article>`;
 }
 function renderCounts() {
-  $("#donation-count").textContent = listings.filter(item => item.isMine).length;
-  $("#pickup-count").textContent = pickups.length;
+  const donEl = $("#donation-count");
+  if (donEl) donEl.textContent = listings.filter(item => item.isMine).length;
+  const pickEl = $("#pickup-count");
+  if (pickEl) pickEl.textContent = pickups.length;
 }
 function renderListings() {
   const items = filteredListings();
@@ -157,9 +160,13 @@ function openDetails(id) {
 function navigate(page) {
   currentPage = page;
   document.querySelectorAll(".page-view").forEach(view => view.classList.add("hidden"));
-  $(`#page-${page}`).classList.remove("hidden");
+  const targetPage = $(`#page-${page}`);
+  if (targetPage) targetPage.classList.remove("hidden");
   document.querySelectorAll(".nav-link").forEach(link => link.classList.toggle("active", link.dataset.page === page));
-  $("#breadcrumb-page").textContent = ({ discover: "Discover food", "my-donations": "My donations", "my-pickups": "My pickups" })[page];
+  const breadcrumb = $("#breadcrumb-page");
+  if (breadcrumb) {
+    breadcrumb.textContent = ({ discover: "Discover food", "food-map": "Community food map", "my-donations": "My donations", "my-requests": "My food requests", "my-pickups": "My pickups" })[page] || "Community";
+  }
   if (page === "my-donations") renderDonations();
   if (page === "my-pickups") renderPickups();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -192,15 +199,32 @@ function renderDonations() {
       return `<article class="list-row donation-place-row"><span class="request-row-icon">⌖</span><div class="list-row-main"><strong>${esc(place)}</strong><span>${items.length} food ${items.length === 1 ? "donation" : "donations"} · ${esc([...totals].map(([unit, quantity]) => `${quantity} ${unit}`).join(" · "))}</span></div><a class="map-area-link" href="https://www.openstreetmap.org/search?query=${encodeURIComponent(place)}" target="_blank" rel="noopener noreferrer">View area ↗</a></article>`;
     }).join("")
     : `<div class="list-empty">Your donated food and drop-off areas will be listed here.</div>`;
-  $("#donation-list").innerHTML = own.length ? own.slice().reverse().map(item => `<article class="list-row"><img src="${esc(item.image)}" alt=""><div class="list-row-main"><strong>${esc(item.title)}</strong><span>${esc(item.location)} · ${esc(item.pickup)} · ${esc(item.source || "Home / household")}</span></div><span class="row-quantity">${esc(item.originalQuantity || item.quantity)} ${esc(item.unit)}</span><span class="status-pill ${item.status === "available" ? "active" : item.status === "matched" ? "matched" : item.status === "delivered" ? "delivered" : "taken"}">${item.status === "available" ? "Available" : item.status === "matched" ? "Matched · handover pending" : item.status === "delivered" ? "Delivered" : "Picked up"}</span></article>`).join("") : `<div class="list-empty">Nothing shared just yet. Your first donation could make someone's day.<br><button class="button button-primary" style="margin-top:12px" data-open-donate>＋ Share food</button></div>`;
+  $("#donation-list").innerHTML = own.length ? own.slice().reverse().map(item => {
+    const fallback = photoFallbacks[item.category] || photoFallbacks.Other;
+    const imgUrl = item.image || fallback;
+    return `<article class="list-row"><img src="${esc(imgUrl)}" alt="${esc(item.title)}"><div class="list-row-main"><strong>${esc(item.title)}</strong><span>${esc(item.location)} · ${esc(item.pickup)} · ${esc(item.source || "Home / household")}</span></div><span class="row-quantity">${esc(item.originalQuantity || item.quantity)} ${esc(item.unit)}</span><span class="status-pill ${item.status === "available" ? "active" : item.status === "matched" ? "matched" : item.status === "delivered" ? "delivered" : "taken"}">${item.status === "available" ? "Available" : item.status === "matched" ? "Matched · handover pending" : item.status === "delivered" ? "Delivered" : "Picked up"}</span></article>`;
+  }).join("") : `<div class="list-empty">Nothing shared just yet. Your first donation could make someone's day.<br><button class="button button-primary" style="margin-top:12px" data-open-donate>＋ Share food</button></div>`;
 }
 function renderPickups() {
-  $("#pickup-summary").innerHTML = `<div class="summary-card"><span>PICKUPS REQUESTED</span><strong>${pickups.length}</strong></div><div class="summary-card"><span>PORTIONS CLAIMED</span><strong>${pickups.reduce((sum, item) => sum + item.quantity, 0)}</strong></div><div class="summary-card"><span>NEIGHBORHOODS VISITED</span><strong>${new Set(pickups.map(item => item.location)).size}</strong></div>`;
-  $("#pickup-list").innerHTML = pickups.length ? pickups.slice().reverse().map(item => `<article class="list-row"><img src="${esc(item.image)}" alt=""><div class="list-row-main"><strong>${esc(item.title)}</strong><span>${esc(item.location)} · ${esc(item.pickup)}</span></div><span class="row-quantity">${esc(item.quantity)} ${esc(item.unit)}</span><span class="status-pill active">Pickup requested</span></article>`).join("") : `<div class="list-empty">Your pickup list is waiting for something delicious.<br>Explore what's being shared in your neighborhood.</div>`;
+  const summaryEl = $("#pickup-summary");
+  const listEl = $("#pickup-list");
+  if (!summaryEl || !listEl) return;
+  summaryEl.innerHTML = `<div class="summary-card"><span>PICKUPS REQUESTED</span><strong>${pickups.length}</strong></div><div class="summary-card"><span>PORTIONS CLAIMED</span><strong>${pickups.reduce((sum, item) => sum + item.quantity, 0)}</strong></div><div class="summary-card"><span>NEIGHBORHOODS VISITED</span><strong>${new Set(pickups.map(item => item.location)).size}</strong></div>`;
+  listEl.innerHTML = pickups.length ? pickups.slice().reverse().map(item => {
+    const fallback = photoFallbacks[item.category] || photoFallbacks.Other;
+    const imgUrl = item.image || fallback;
+    return `<article class="list-row"><img src="${esc(imgUrl)}" alt="${esc(item.title)}"><div class="list-row-main"><strong>${esc(item.title)}</strong><span>${esc(item.location)} · ${esc(item.pickup)}</span></div><span class="row-quantity">${esc(item.quantity)} ${esc(item.unit)}</span><span class="status-pill active">Pickup requested</span></article>`;
+  }).join("") : `<div class="list-empty">Your pickup list is waiting for something delicious.<br>Explore what's being shared in your neighborhood.</div>`;
 }
 
 document.addEventListener("click", async event => {
-  const button = event.target.closest("button");
+  const trigger = event.target.closest("button, [data-page]");
+  if (!trigger) return;
+  if (trigger.dataset.page) {
+    if (trigger.tagName === "A") event.preventDefault();
+    navigate(trigger.dataset.page);
+  }
+  const button = trigger.tagName === "BUTTON" ? trigger : event.target.closest("button");
   if (!button) return;
   if (button.dataset.page) navigate(button.dataset.page);
   if (button.hasAttribute("data-open-donate")) openDonationForm();

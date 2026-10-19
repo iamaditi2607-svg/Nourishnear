@@ -36,7 +36,9 @@ def load_env():
         if not line or line.startswith("#") or "=" not in line:
             continue
         name, value = line.split("=", 1)
-        os.environ.setdefault(name.strip(), value.strip().strip("'\""))
+        val = value.strip().strip("'\"")
+        if val:
+            os.environ[name.strip()] = val
 
 
 SEED_LISTINGS = [
@@ -668,8 +670,9 @@ class Handler(BaseHTTPRequestHandler):
             f"Current community food/request data (JSON): {json.dumps(context, ensure_ascii=False)}\n"
             f"User's latest question: {prompt}"
         )
+        model = os.environ.get("GROQ_MODEL", GROQ_MODEL)
         payload = {
-            "model": os.environ.get("GROQ_MODEL", GROQ_MODEL),
+            "model": model,
             "messages": [{"role": "system", "content": instruction}, *safe_history,
                          {"role": "user", "content": user_input}],
             "max_completion_tokens": 1200,
@@ -677,17 +680,29 @@ class Handler(BaseHTTPRequestHandler):
         endpoint = "https://api.groq.com/openai/v1/chat/completions"
         request = Request(endpoint, data=json.dumps(payload).encode("utf-8"),
                           headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}, method="POST")
+        result = None
         try:
             with urlopen(request, timeout=20) as response:
                 result = json.loads(response.read().decode("utf-8"))
         except HTTPError as error:
             self.log_error("Groq API returned HTTP %s", error.code)
-            message = "Nourish AI could not answer right now."
-            if error.code == 429:
-                message = "Nourish AI is busy right now. Please wait a moment and try again."
-            elif error.code in (401, 403):
-                message = "The Groq API key is invalid or does not have AI access. Check the server .env file."
-            raise ApiError(502, message) from error
+            if error.code in (400, 404) and model != "llama-3.3-70b-versatile":
+                try:
+                    payload["model"] = "llama-3.3-70b-versatile"
+                    fb_req = Request(endpoint, data=json.dumps(payload).encode("utf-8"),
+                                     headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}, method="POST")
+                    with urlopen(fb_req, timeout=20) as fb_resp:
+                        result = json.loads(fb_resp.read().decode("utf-8"))
+                        error = None
+                except Exception:
+                    pass
+            if error is not None:
+                message = "Nourish AI could not answer right now."
+                if error.code == 429:
+                    message = "Nourish AI is busy right now. Please wait a moment and try again."
+                elif error.code in (401, 403):
+                    message = "The Groq API key is invalid or does not have AI access. Check the server .env file."
+                raise ApiError(502, message) from error
         except (URLError, TimeoutError) as error:
             self.log_error("Groq API request failed: %s", error)
             raise ApiError(502, "Nourish AI is temporarily unreachable. Please try again.") from error
@@ -703,6 +718,10 @@ class Handler(BaseHTTPRequestHandler):
             raise ApiError(502, "Nourish AI returned an invalid response. Please try again.")
         message = choices[0].get("message")
         answer = message.get("content", "").strip() if isinstance(message, dict) else ""
+        if not answer and isinstance(message, dict) and message.get("reasoning"):
+            answer = str(message.get("reasoning")).strip()
+        answer = re.sub(r"<think>[\s\S]*?</think>", "", answer).strip()
+        answer = re.sub(r"<thought>[\s\S]*?</thought>", "", answer).strip()
         if not answer:
             raise ApiError(502, "Nourish AI did not return an answer. Please try again.")
         return {"reply": answer, "sources": []}
@@ -738,7 +757,7 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     load_env()
     initialize_database()
-    host = os.environ.get("HOST", "127.0.0.1")
+    host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", "8000"))
     server = ThreadingHTTPServer((host, port), Handler)
     print(f"NourishNear running at http://{host}:{port} (SQLite: {DATABASE})")

@@ -162,11 +162,13 @@ navigate = function (page) {
   if (page === "food-map") renderFoodMap();
   if (page === "my-requests") renderMyRequests();
   if (page === "my-donations") renderDonations();
+  if (page === "my-pickups") renderPickups();
   $("#breadcrumb-page").textContent = ({
     discover: "Discover food",
     "food-map": "Community food map",
     "my-donations": "My donations",
-    "my-requests": "My food requests"
+    "my-requests": "My food requests",
+    "my-pickups": "My pickups"
   })[page] || "Community";
 };
 
@@ -372,6 +374,62 @@ function appendAssistantMessage(role, text, sources = []) {
   return message;
 }
 
+function generateLocalAiResponse(prompt, userLocation) {
+  const query = prompt.toLowerCase();
+  const loc = (userLocation || "").toLowerCase();
+  const availableFoods = listings.filter(i => i.status === "available");
+
+  // 1. Check for greeting
+  if (/^(hi|hello|hey|namaste|pranam|namaskar|salaam|good\s*(morning|evening|afternoon)|kaise ho)\b/i.test(query.trim())) {
+    return `Namaste! 🙏 Main Nourish AI hoon. Main aapke aas-paas ka bhojan dhoondhne, surplus khana share karne, aur food requests post karne mein madad kar sakta hoon.\n\nAap pooch sakte hain—jaise "Lucknow mein kya khana available hai?", "Bhojan donate kaise karein?", ya "Food request kaise post karein?".`;
+  }
+
+  // 2. Check for food donation / share help
+  if (/(donate|share|daan|bhojan dena|bacha hua|leftover|wedding|shadi|party|cater)/i.test(query)) {
+    return `NourishNear par bhojan share karna bahut aasan hai:\n\n1. Upar "＋ Share food" ya "Donate food" button par click karein.\n2. Bhojan ka naam, category (Meals, Produce, Bakery, Dairy), aur quantity batayein.\n3. Pickup ka samay aur apna area/shehar darj karein (photo upload karna optional hai).\n4. Post karte hi aapki listing community map aur feed par dikhne lagegi taaki zarooratmand neighbor use reserve kar sakein.\n\nKisi bhi extra home-cooked ya function ke khane ko zaya hone se bachayein! ❤️`;
+  }
+
+  // 3. Check for food request / asking help
+  if (/(need food|bhukh|madad|request|bhojan chahiye|khana chahiye|help me with food)/i.test(query)) {
+    return `Agar aapko ya kisi parivaar ko bhojan ki zaroorat hai:\n\n1. "＋ Ask for food" par click karke apni request post karein (kitne logon ke liye chahiye, delivery ya pickup, aur aapka area).\n2. Ya fir "Food available nearby" tab par jakar kisi bhi uplabdh listing par "View & request" daba kar pickup reserve karein.\n\nCommunity ke donors aur helpers jald hi aapki request par offer bhejenge!`;
+  }
+
+  // 4. Check for food safety / storage
+  if (/(safe|safety|hygiene|store|storage|fridge|kharaab|expire|baasi)/i.test(query)) {
+    return `Bhojan ki suraksha (Food Safety) ke zaroori niyam:\n\n• Cooked Food: Pakne ke 2 ghante ke bheetar serve karein ya 4°C se kam taapmaan par fridge mein rakhein.\n• Clean Packaging: Bhojan ko saaf, air-tight dabbo ya foil mein pack karein.\n• Quality Check: Handover se pehle khushboo, rang aur freshness zaroor jaanch lein.\n• Timely Pickup: Pickup window ke bheetar hi khana share karein taaki taazgi bani rahe.`;
+  }
+
+  // 5. Query matching listings or location
+  const matchingFoods = availableFoods.filter(item => {
+    const text = `${item.title} ${item.description} ${item.category} ${item.location}`.toLowerCase();
+    const words = query.split(/\s+/).filter(w => w.length > 2);
+    const matchesWord = words.some(w => text.includes(w));
+    const matchesLoc = loc && text.includes(loc);
+    return matchesWord || matchesLoc;
+  });
+
+  if (matchingFoods.length > 0) {
+    const itemsText = matchingFoods.slice(0, 4).map(item =>
+      `• ${item.title} (${item.quantity} ${item.unit}) — 📍 ${item.location} [Pickup: ${item.pickup}]`
+    ).join("\n");
+    return `Aapki search ke anusaar yeh bhojan uplabdh hai:\n\n${itemsText}\n\nAap food card par jakar "View & request" par click karke turant servings reserve kar sakte hain!`;
+  }
+
+  // 6. Generic food search fallback
+  if (/(khana|food|meal|dinner|lunch|breakfast|dal|rice|sabzi|roti|veggie|bread|milk|fruits)/i.test(query)) {
+    if (availableFoods.length > 0) {
+      const topItems = availableFoods.slice(0, 3).map(item =>
+        `• ${item.title} (${item.quantity} ${item.unit}) — 📍 ${item.location}`
+      ).join("\n");
+      return `Community mein filhaal yeh food listings uplabdh hain:\n\n${topItems}\n\nAap aur dekhne ke liye "Food available nearby" tab ya "Community food map" par ja sakte hain.`;
+    }
+    return `Filhaal is area ke liye koi open food listing nahi mili. Aap "Ask for food" par click karke apni zaroorat post kar sakte hain taaki aas-paas ke neighbors aapki madad kar sakein.`;
+  }
+
+  // 7. General inquiry response
+  return `Aapka sawaal: "${prompt}"\n\nNourishNear ek community food-sharing platform hai jahan par bacha hua taaza bhojan share kiya jata hai aur zarooratmand log bhojan prapt kar sakte hain.\n\nAap aas-paas ke uplabdh bhojan ke baare mein pooch sakte hain, ya map explore kar sakte hain.\n\n(💡 Live AI chat ke liye server ki .env file mein apni free Groq API key add karein: console.groq.com/keys)`;
+}
+
 async function askNourishAi() {
   const input = $("#need-prompt");
   const prompt = input.value.trim();
@@ -383,7 +441,7 @@ async function askNourishAi() {
   try {
     const result = await nourishApi.askAssistant({
       prompt,
-      location: $("#location-input").value.trim(),
+      location: $("#location-input") ? $("#location-input").value.trim() : "",
       history: conversationHistory.slice(-8)
     });
     pending.textContent = result.reply;
@@ -409,7 +467,13 @@ async function askNourishAi() {
     conversationHistory = conversationHistory.slice(-8);
   } catch (error) {
     pending.remove();
-    appendAssistantMessage("assistant error", error.message);
+    if (error.message && (error.message.includes("GROQ_API_KEY") || error.message.includes("AI setup") || error.message.includes("503") || error.message.includes("busy") || error.message.includes("temporarily"))) {
+      const fallbackReply = generateLocalAiResponse(prompt, $("#location-input") ? $("#location-input").value.trim() : "");
+      appendAssistantMessage("assistant", fallbackReply);
+      conversationHistory.push({ role: "user", text: prompt }, { role: "assistant", text: fallbackReply });
+    } else {
+      appendAssistantMessage("assistant error", error.message);
+    }
   } finally {
     $("#ask-assistant").disabled = false;
   }
@@ -536,7 +600,8 @@ document.addEventListener("submit", async event => {
 const previousRenderCounts = renderCounts;
 renderCounts = function () {
   previousRenderCounts();
-  $("#pickup-count").textContent = needs.filter(item => item.isMine).length;
+  const reqEl = $("#request-count");
+  if (reqEl) reqEl.textContent = needs.filter(item => item.isMine).length;
 };
 
 async function refreshCommunityData() {

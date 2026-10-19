@@ -1,9 +1,24 @@
 (() => {
   const identityKey = "nourishnear-community-id-v1";
   const migrationKey = "nourishnear-backend-migrated-v1";
+  function generateUUID() {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      try {
+        return crypto.randomUUID();
+      } catch (e) {
+        // Fallback if randomUUID fails
+      }
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === "x" ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
   let userId = localStorage.getItem(identityKey);
-  if (!userId) {
-    userId = crypto.randomUUID();
+  if (!userId || !/^[0-9a-f-]{36}$/i.test(userId)) {
+    userId = generateUUID();
     localStorage.setItem(identityKey, userId);
   }
 
@@ -39,13 +54,18 @@
   window.nourishApi = {
     async bootstrap() {
       if (localStorage.getItem(migrationKey) !== "complete") {
-        await request("/api/migrate", {
-          listings: readLegacy("nourishnear-listings-v1"),
-          needs: readLegacy("nourishnear-needs-v1"),
-          pickups: readLegacy("nourishnear-pickups-v1"),
-          saved: readLegacy("nourishnear-saved-v1")
-        });
-        localStorage.setItem(migrationKey, "complete");
+        try {
+          await request("/api/migrate", {
+            listings: readLegacy("nourishnear-listings-v1"),
+            needs: readLegacy("nourishnear-needs-v1"),
+            pickups: readLegacy("nourishnear-pickups-v1"),
+            saved: readLegacy("nourishnear-saved-v1")
+          });
+          localStorage.setItem(migrationKey, "complete");
+        } catch (error) {
+          console.warn("Legacy migration skipped:", error);
+          localStorage.setItem(migrationKey, "complete");
+        }
       }
       return request("/api/bootstrap");
     },
