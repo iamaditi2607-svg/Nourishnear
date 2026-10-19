@@ -1,9 +1,20 @@
 # NourishNear 🍲
 
 > **🌐 Live Demo (Public URL):** [https://288334a6bae93a.lhr.life](https://288334a6bae93a.lhr.life)  
-> *(Accessible on mobile phones, tablets, and laptops worldwide)*
+> *(Mobile phones, tablets aur laptops par direct accessible)*
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/iamaditi2607-svg/Nourishnear)
 
 NourishNear is a neighborhood food-sharing app with a Python/SQLite backend, location-aware food and request boards, donor-uploaded food photos, and a Groq-powered Hindi/English assistant. It can be installed as a Progressive Web App (PWA) from a supported browser.
+
+## ☁️ Permanent 24/7 Cloud Deployment (Render)
+
+Aap is project ko **Render.com** par 24/7 permanently free deploy kar sakte hain (bina laptop chalu rakhe):
+
+1. Click karein: **[Deploy to Render](https://render.com/deploy?repo=https://github.com/iamaditi2607-svg/Nourishnear)**
+2. Apna GitHub account connect karein.
+3. Render automatically `render.yaml` detect karke app build aur deploy kar dega.
+4. Kuch hi seconds mein aapko apna permanent URL mil jayega (jaise `https://nourishnear.onrender.com`).
 
 ## 🚀 Quick Run (Local or Public)
 

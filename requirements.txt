@@ -1,0 +1,2 @@
+# NourishNear Backend Dependencies
+requests>=2.31.0
